@@ -6,6 +6,7 @@ import "core:os/os2"
 import "core:os"
 import "core:strings"
 import "core:strconv"
+import "core:time"
 
 
 // commands:
@@ -65,7 +66,6 @@ command_to_data :: proc(device: string) -> (u64, u64) {
       words := strings.fields(line)
       err : bool
       rpackets, err = strconv.parse_u64(words[0])
-      fmt.println(rpackets)
       rx = false
       continue
     }
@@ -77,9 +77,6 @@ command_to_data :: proc(device: string) -> (u64, u64) {
       continue
     }
   }
-
-  fmt.println("rpackets: ", rpackets/1_000)
-  fmt.println("tpackets: ", tpackets/1_000)
 
   return rpackets/1_000, tpackets/1_000
 }
@@ -99,11 +96,11 @@ create_data_file :: proc(name: string, path: string) -> int {
   return 0
 }
 
-new_datapoint :: proc(r_kb: u64, t_kb: u64, path: string) -> int {
+new_datapoint :: proc(rx_kb: u64, tx_kb: u64, path: string) -> int {
 
   full_path := fmt.tprintf("%s/data.txt", path)
 
-  cmd := fmt.tprintf("echo \"%d,%d\" >> %s", r_kb, t_kb, full_path)
+  cmd := fmt.tprintf("echo \"%d,%d\" >> %s", rx_kb, tx_kb, full_path)
 
   state, stdout, stderr, err := os2.process_exec({command={"sh", "-c", cmd}}, context.allocator)
 
@@ -113,8 +110,6 @@ new_datapoint :: proc(r_kb: u64, t_kb: u64, path: string) -> int {
   }
   return 0
 }
-
-
 
 main :: proc() {
 
@@ -137,13 +132,48 @@ main :: proc() {
   result := create_data_file("data", dir_path)
   if result==1 { fmt.printfln("I/O error... Exiting."); os2.exit(2) }
 
+  base_rx :u64 = 0
+  base_tx :u64 = 0
 
+  previous_time := time.tick_now()
+
+  last := time.tick_now()
+  for {
+
+    if time.tick_since(last) >= 30*time.Second {
+
+      last = time.tick_now()
+
+      new_rx, new_tx := command_to_data(device_name)
+
+      cmd := fmt.tprintf("cat %s/data.txt", dir_path)
+
+      state, stdout, stderr, err := os2.process_exec({command={"sh", "-c", cmd}}, context.allocator)
+
+      file := fmt.tprintf("%s", stdout)
+      lines := strings.split(file, "\n")
+      tmp := strings.split(lines[len(lines)-1], ",")
+
+      if len(tmp) < 2 { 
+        // new file, so its empty
+        new_datapoint(base_rx+new_rx, base_tx+new_tx, dir_path)
+        continue 
+      }
+      old_rx, x := strconv.parse_u64(tmp[0])
+      old_tx, y := strconv.parse_u64(tmp[1])
+
+      if old_rx > new_rx {
+        base_rx = old_rx
+        base_tx = old_tx
+      }
+
+      new_datapoint(base_rx+new_rx, base_tx+new_tx, dir_path)
+    }
+  }
 
 
   // NOTE: repeat this every 1000ms 
-  recieved_kb, sent_kb := command_to_data(device_name)
-  new_datapoint(recieved_kb, sent_kb, dir_path)
-  // every iteration: if last line in the file > current data point 
-  // store the last line as base number, then every new datapoint = base number + datapoint
+ // every iteration: if previous_time line in the file > current data point 
+  // store the previous_time line as base number, then every new datapoint = base number + datapoint
  
 }
