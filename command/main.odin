@@ -63,10 +63,8 @@ display_usage_stats :: proc(dir_path: string) {
   rx, x := strconv.parse_u64(tmp[0])
   tx, y := strconv.parse_u64(tmp[1])
 
-  t := [2]u64{tx, rx}
-  for value in t {
-    fmt.printfln("%s KB", format_number(fmt.tprintf("%d", value)))
-  }
+  fmt.printfln("Recieved: %s KB", format_number(fmt.tprintf("%d", rx)))
+  fmt.printfln("Sent:     %s KB", format_number(fmt.tprintf("%d", tx)))
 }
 
 main :: proc() {

@@ -162,7 +162,7 @@ main :: proc() {
       old_rx, x := strconv.parse_u64(tmp[0])
       old_tx, y := strconv.parse_u64(tmp[1])
 
-      if old_rx > new_rx {
+      if old_rx > new_rx || old_tx > new_tx {
         base_rx = old_rx
         base_tx = old_tx
       }
