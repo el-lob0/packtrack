@@ -96,7 +96,8 @@ main :: proc() {
     display_usage_stats(dir_path)
   }
   case "clear": {
-    // rm home/.../data.txt
+    cmd := fmt.tprintf("rm %s/data.txt", dir_path)
+    state, stdout, stderr, err := os2.process_exec({command={"sh", "-c", cmd}}, context.allocator)
   }
   case: fmt.eprintfln(command_warning)
   }
