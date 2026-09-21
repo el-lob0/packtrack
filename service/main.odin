@@ -152,13 +152,21 @@ main :: proc() {
 
       file := fmt.tprintf("%s", stdout)
       lines := strings.split(file, "\n")
-      tmp := strings.split(lines[len(lines)-1], ",")
+      if len(lines) < 3 { 
+        // new file, so its empty
+        new_datapoint(base_rx+new_rx, base_tx+new_tx, dir_path)
+        continue 
+      }
 
+      tmp := strings.split(lines[len(lines)-2], ",")
       if len(tmp) < 2 { 
         // new file, so its empty
         new_datapoint(base_rx+new_rx, base_tx+new_tx, dir_path)
         continue 
       }
+
+
+
       old_rx, x := strconv.parse_u64(tmp[0])
       old_tx, y := strconv.parse_u64(tmp[1])
 

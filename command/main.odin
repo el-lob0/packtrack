@@ -54,6 +54,7 @@ display_usage_stats :: proc(dir_path: string) {
   file := fmt.tprintf("%s", stdout)
   lines := strings.split(file, "\n")
 
+  if len(lines) < 3 {return}
   line := lines[len(lines)-2]
 
   tmp := strings.split(line, ",")
